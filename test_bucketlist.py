@@ -3,7 +3,12 @@
 import unittest
 import os
 import json
+
 from app import create_app, db
+from flask import current_app
+from flask_testing import TestCase
+from app.models import User, Bucketlist
+
 
 class BucketlistTestCase(unittest.TestCase):
     """This class represents the bucketlist test case"""
@@ -16,7 +21,9 @@ class BucketlistTestCase(unittest.TestCase):
 
         # binds the app to the current context
         with self.app.app_context():
-            # create all tables
+            # close old sessions and create all tables
+            db.session.close()
+            db.drop_all()
             db.create_all()
 
     def test_api_can_create_bucketlist(self):
@@ -35,9 +42,10 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_api_can_retrieve_bucketlist_by_id(self):
         """Test API can get a single bucketlist by using it's id."""
-        rv = self.client().post('/bucketlists/', data=self.bucketlist)
-        self.assertEqual(rv.status_code, 201)
-        result_in_json = json.loads(rv.data.decode('utf-8').replace("'", "\""))
+        res = self.client().post('/bucketlists/', data=self.bucketlist)
+        self.assertEqual(res.status_code, 201)
+        result_in_json = json.loads(
+            res.data.decode('utf-8').replace("'", "\""))
         result = self.client().get(
             '/bucketlists/{}'.format(result_in_json['id']))
         self.assertEqual(result.status_code, 200)
@@ -45,37 +53,117 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_a_bucketlist_can_be_edited(self):
         """Test API can edit an existing bucketlist. (PUT request)"""
-        rv = self.client().post(
+        res = self.client().post(
             '/bucketlists/',
             data={'name': 'Eat, pray and love'})
-        self.assertEqual(rv.status_code, 201)
-        rv = self.client().put(
+        self.assertEqual(res.status_code, 201)
+        res = self.client().put(
             '/bucketlists/1',
             data={
                 "name": "Dont just eat, but also pray and love :-)"
             })
-        self.assertEqual(rv.status_code, 200)
+        self.assertEqual(res.status_code, 200)
         results = self.client().get('/bucketlists/1')
         self.assertIn('Dont just eat', str(results.data))
 
     def test_bucketlist_deletion(self):
         """Test API can delete an existing bucketlist. (DELETE request)."""
-        rv = self.client().post(
+        res = self.client().post(
             '/bucketlists/',
             data={'name': 'Eat, pray and love'})
-        self.assertEqual(rv.status_code, 201)
+        self.assertEqual(res.status_code, 201)
         res = self.client().delete('/bucketlists/1')
         self.assertEqual(res.status_code, 200)
         # Test to see if it exists, should return a 404
         result = self.client().get('/bucketlists/1')
         self.assertEqual(result.status_code, 404)
 
-    def tearDown(self):
-        """teardown all initialized variables."""
-        with self.app.app_context():
-            # drop all tables
-            db.session.remove()
-            db.drop_all()
+    def test_app_is_development(self):
+        """ Test API can set different config for development of the app"""
+        self.assertTrue(self.app.config['DEBUG'] is True)
+        self.assertFalse(current_app is None)
+        self.assertTrue(
+            self.app.config['SQLALCHEMY_DATABASE_URI'] == "postgresql://localhost/bucketlist_api"
+        )
+
+    def test_app_is_testing(self):
+        """ Test API can set different config for testing the app"""
+        self.assertTrue(self.app.config['DEBUG'])
+        self.assertTrue(
+            self.app.config['SQLALCHEMY_DATABASE_URI'] == "postgresql://localhost/bucketlist_api"
+        )
+
+    def test_encode_auth_token(self):
+        """ Test API can create an auth token"""
+        with self.client:
+            user = User(
+                email='test@test.com',
+                password='test'
+            )
+            user.save()
+
+            auth_token = user.encode_auth_token(user.id)
+            self.assertTrue(isinstance(auth_token, bytes))
+
+    def test_decode_auth_token(self):
+        """ Test API can decode the auth token"""
+        user = User(
+            email='test@test.com',
+            password='test'
+        )
+        user.save()
+        auth_token = user.encode_auth_token(user.id)
+        self.assertTrue(isinstance(auth_token, bytes))
+        self.assertTrue(User.decode_auth_token(auth_token) == 1)
+
+    def test_registration(self):
+        """ Test for user registration """
+
+        response = self.client().post(
+            '/auth/register',
+            data=json.dumps(dict(
+                email='joe@gmail.com',
+                password='123456'
+            )),
+            content_type='application/json'
+        )
+        data = json.loads(response.data.decode())
+        self.assertTrue(data['status'] == 'success')
+        self.assertTrue(data['message'] == 'Successfully registered.')
+        self.assertTrue(data['auth_token'])
+        self.assertTrue(response.content_type == 'application/json')
+        self.assertEqual(response.status_code, 201)
+
+    def test_registered_with_already_registered_user(self):
+        """ Test registration with already registered email"""
+        user = User(
+            email='joe@gmail.com',
+            password='test'
+        )
+        user.save()
+        # with self.client:
+        response = self.client().post(
+            '/auth/register',
+            data=json.dumps(dict(
+                email='joe@gmail.com',
+                password='123456'
+            )),
+            content_type='application/json'
+        )
+        data = json.loads(response.data.decode())
+        self.assertTrue(data['status'] == 'fail')
+        self.assertTrue(
+            data['message'] == 'User already exists. Please Log in.')
+        self.assertTrue(response.content_type == 'application/json')
+        self.assertEqual(response.status_code, 202)
+
+    # def tearDown(self):
+    #     """teardown all initialized variables."""
+    #     with self.app.app_context():
+    #         # drop all tables
+    #         db.session.remove()
+    #         db.drop_all()
+
 
 # Make the tests conveniently executable
 if __name__ == "__main__":
