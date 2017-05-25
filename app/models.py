@@ -151,6 +151,8 @@ class Item(db.Model):
         db.DateTime, default=db.func.current_timestamp(),
         onupdate=db.func.current_timestamp())
     done = db.Column(db.Boolean)
+    bucketlist_id = db.Column(db.Integer, db.ForeignKey(
+        Bucketlist.id, ondelete="CASCADE"))
 
     def __init__(self, name, bucketlist_id):
         """initialize with name."""
