@@ -58,33 +58,66 @@ def create_app(config_name):
                         return make_response(response)
                 else:
                     # GET
-                    bucketlists = Bucketlist.get_all(user_id)
-                    results = []
+                    # Start Search Function
+                    search = request.args.get("q", "")
+                    if not search:
+                        bucketlists = Bucketlist.get_all(user_id)
+                        results = []
 
-                    for bucketlist in bucketlists:
-                        items = Item.query.filter_by(
-                            bucketlist_id=bucketlist.id)
-                        bucketlist_items = []
-                        for item in items:
+                        for bucketlist in bucketlists:
+                            items = Item.query.filter_by(
+                                bucketlist_id=bucketlist.id)
+                            bucketlist_items = []
+                            for item in items:
+                                obj = {
+                                    'id': item.id,
+                                    'name': item.name,
+                                    'date_created': item.date_created,
+                                    'date_modified': item.date_modified
+                                }
+                                bucketlist_items.append(obj)
                             obj = {
-                                'id': item.item_id,
-                                'name': item.name,
-                                'date_created': item.date_created,
-                                'date_modified': item.date_modified
+                                'id': bucketlist.id,
+                                'name': bucketlist.name,
+                                'date_created': bucketlist.date_created,
+                                'date_modified': bucketlist.date_modified,
+                                'items': bucketlist_items,
+                                'created_by': bucketlist.created_by
                             }
-                            bucketlist_items.append(obj)
-                        obj = {
-                            'id': bucketlist.id,
-                            'name': bucketlist.name,
-                            'date_created': bucketlist.date_created,
-                            'date_modified': bucketlist.date_modified,
-                            'items': bucketlist_items,
-                            'created_by': bucketlist.created_by
-                        }
-                        results.append(obj)
-                response = jsonify(results)
-                response.status_code = 200
-                return make_response(response)
+                            results.append(obj)
+                        response = jsonify(results)
+                        response.status_code = 200
+                        return make_response(response)
+                    else:
+                        search_bucket = Bucketlist.query.filter_by(name=search).first()
+                        if not search_bucket:
+                            response = jsonify({
+                                "message": "That Bucketlist Does Not Exist!"
+                            })
+                            response.status_code = 404
+                            return make_response(response)
+                        else:
+                            search_item = Item.query.filter_by(bucketlist_id=search_bucket.id)
+                            item_list = []
+                            for item in search_item:
+                                obj = {
+                                    'id': item.id,
+                                    'name': item.name,
+                                    'date_created': item.date_created,
+                                    'date_modified': item.date_modified
+                                }
+                                item_list.append(obj)
+                            obj = {
+                                'id': search_bucket.id,
+                                'name': search_bucket.name,
+                                'date_created': search_bucket.date_created,
+                                'date_modified': search_bucket.date_modified,
+                                'items': item_list,
+                                'created_by': search_bucket.created_by
+                            }
+                            response = jsonify(obj)
+                            response.status_code = 200
+                            return make_response(response)
             else:
                 # user is not legit, so the payload is an error message
                 message = user_id
