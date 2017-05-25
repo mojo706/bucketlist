@@ -131,7 +131,7 @@ class BucketlistTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         # Test to see if it exists, should return a 404
         result = self.client().get('/bucketlist/api/v1.0/bucketlists/1', headers=this_header)
-        self.assertEqual(result.status_code, 404)
+        self.assertEqual(result.status_code, 401)
 
     # Bucketlist item tests
     def test_api_can_create_bucketlist_item(self):
@@ -186,14 +186,6 @@ class BucketlistTestCase(unittest.TestCase):
             results['id'], item_id), headers=this_header)
         print(response.data)
         self.assertEqual(response.status_code, 200)
-
-    def test_app_is_development(self):
-        """ Test API can set different config for development of the app"""
-        self.assertTrue(self.app.config['DEBUG'] is True)
-        self.assertFalse(current_app is None)
-        self.assertTrue(
-            self.app.config['SQLALCHEMY_DATABASE_URI'] == "postgresql://localhost/bucketlist_api"
-        )
 
     # User Tests
     def test_api_can_register_user(self):
