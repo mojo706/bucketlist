@@ -26,6 +26,14 @@ def create_app(config_name):
     def bucketlists():
         """ Function that creates a new bucketlist or retrieves all bucketlists """
         auth_header = request.headers.get('Authorization')
+        # If auth header is non existent
+        if not auth_header:
+            response = jsonify({
+                "message": "Unauthorised Access"
+            })
+            response.status_code = 401
+            return make_response(response)
+
         access_token = auth_header.split(" ")[1]
 
         if access_token:
@@ -158,11 +166,26 @@ def create_app(config_name):
     def update_bucketlist(id):
         """ Function that depending on the HTTP Request will handle deleting, updating or getting a bucketlist respectively."""
         auth_header = request.headers.get('Authorization')
+        # If auth header is non existent
+        if not auth_header:
+            response = jsonify({
+                "message": "Unauthorised Access"
+            })
+            response.status_code = 401
+            return make_response(response)
+
         access_token = auth_header.split(" ")[1]
      # retrieve a buckelist using it's ID
-        bucketlist = Bucketlist.query.filter_by(id=id).first()
         if access_token:
             user_id = User.decode_auth_token(access_token)
+            bucketlist = Bucketlist.query.filter_by(
+                id=id).filter_by(created_by=user_id).first()
+            if not bucketlist:
+                response = jsonify({
+                    "message": "This Bucketlist Does Not Exist!"
+                })
+                response.status_code = 401
+                return make_response(response)
             if not isinstance(user_id, str):
                 if not bucketlist:
                     # Raise an HTTPException with a 404 not found status code
@@ -225,6 +248,14 @@ def create_app(config_name):
         """ Method to add items to a bucketlist"""
         # Get the access token from the header
         auth_header = request.headers.get('Authorization')
+        # If auth header is non existent
+        if not auth_header:
+            response = jsonify({
+                "message": "Unauthorised Access"
+            })
+            response.status_code = 401
+            return make_response(response)
+
         access_token = auth_header.split(" ")[1]
 
         if access_token:
@@ -233,14 +264,14 @@ def create_app(config_name):
             if not isinstance(user_id, str):
 
                 name = str(request.data.get('name', ''))
-                bucketlist = Bucketlist.query.filter(
-                    Bucketlist.created_by == user_id, Bucketlist.id == id).first()
-                exist_item = Item.query.filter(
-                    Item.bucketlist_id == id, Item.name == name).first()
+                bucketlist = Bucketlist.query.filter_by(
+                    id=id).filter_by(created_by=user_id).first()
 
                 if not bucketlist:
-
                     abort(404)
+
+                exist_item = Item.query.filter_by(bucketlist_id=id).filter_by(name=name).first()
+
                 if exist_item:
                     response = {
                         "message": "That item already exists"
@@ -282,21 +313,30 @@ def create_app(config_name):
 
     @app.route('/bucketlist/api/v1.0/bucketlists/<int:id>/items/<int:item_id>', methods=['PUT', 'DELETE'])
     def update_item(id, item_id):
-        auth_header = request.headers.get('Authorization')
-        access_token = auth_header.split(" ")[1]
 
+        auth_header = request.headers.get('Authorization')
+        # If auth header is non existent
+        if not auth_header:
+            response = jsonify({
+                "message": "Unauthorised Access"
+            })
+            response.status_code = 401
+            return make_response(response)
+
+        access_token = auth_header.split(" ")[1]
         if access_token:
             user_id = User.decode_auth_token(access_token)
             name = str(request.data.get('name', ''))
 
             if not isinstance(user_id, str):
-                bucketlist = Bucketlist.query.filter(
-                    Bucketlist.created_by == user_id, Bucketlist.id == id).first()
-                exist_item = Item.query.filter(
-                    Item.bucketlist_id == id, Item.name == name).first()
+                bucketlist = Bucketlist.query.filter_by(
+                    id=id).filter_by(created_by=user_id).first()
+
                 if not bucketlist:
                     abort(404)
 
+                exist_item = Item.query.filter_by(
+                    bucketlist_id=id).filter_by(id=item_id).first()
                 if not exist_item:
                     # Throw 404 if no items exist
                     abort(404)
