@@ -1,4 +1,3 @@
-# app/__init__.py
 
 import os
 
@@ -61,7 +60,28 @@ def create_app(config_name):
                     # Start Search Function
                     search = request.args.get("q", "")
                     if not search:
-                        bucketlists = Bucketlist.get_all(user_id)
+                        # Pagination
+                        if request.args.get("page"):
+                            page = int(request.args.get("page"))
+                        else:
+                            page = 1
+                        if request.args.get("limit") and int(request.args.get("limit")) < 100:
+                            limit = int(request.args.get("limit"))
+                        else:
+                            limit = 3
+                        paginated_buckets = Bucketlist.query.filter_by(
+                            created_by=user_id).paginate(page, limit, False)
+                        bucketlists = paginated_buckets.items
+                        if paginated_buckets.has_next:
+                            nextpage = '/bucketlist/api/v1.0/bucketlists/?page=' + \
+                                str(page + 1) + '&limit=' + str(limit)
+                        else:
+                            nextpage = "Nothing To See Here"
+                        if paginated_buckets.has_prev:
+                            previouspage = '/bucketlist/api/v1.0/bucketlists/?page=' + \
+                                str(page - 1) + '&limit=' + str(limit)
+                        else:
+                            previouspage = "Nothing To See Here"
                         results = []
 
                         for bucketlist in bucketlists:
@@ -85,11 +105,16 @@ def create_app(config_name):
                                 'created_by': bucketlist.created_by
                             }
                             results.append(obj)
-                        response = jsonify(results)
+                        response = jsonify({
+                            "next page": nextpage,
+                            "previous page": previouspage,
+                            "bucketlists": results
+                        })
                         response.status_code = 200
                         return make_response(response)
                     else:
-                        search_bucket = Bucketlist.query.filter_by(name=search).first()
+                        search_bucket = Bucketlist.query.filter_by(
+                            name=search).first()
                         if not search_bucket:
                             response = jsonify({
                                 "message": "That Bucketlist Does Not Exist!"
@@ -97,7 +122,8 @@ def create_app(config_name):
                             response.status_code = 404
                             return make_response(response)
                         else:
-                            search_item = Item.query.filter_by(bucketlist_id=search_bucket.id)
+                            search_item = Item.query.filter_by(
+                                bucketlist_id=search_bucket.id)
                             item_list = []
                             for item in search_item:
                                 obj = {
@@ -304,7 +330,6 @@ def create_app(config_name):
                         response = jsonify(response)
                         response.status_code = 400
                         return make_response(response)
-
 
             else:
                 # user is not legit, so the payload is an error message
