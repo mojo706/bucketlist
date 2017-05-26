@@ -40,8 +40,6 @@ def create_app(config_name):
             user_id = User.decode_auth_token(access_token)
 
             if not isinstance(user_id, str):
-                # user_email = User.query.filter_by(id=user_id).first()
-                # user_email_details = user_email.email
                 if request.method == "POST":
                     name = str(request.data.get('name', ''))
 
