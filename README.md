@@ -1,4 +1,6 @@
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/35630f5456104c7aa15686d0438dc1dc)](https://www.codacy.com/app/mojo706/bucketlist?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=mojo706/bucketlist&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://api.codacy.com/project/badge/Coverage/35630f5456104c7aa15686d0438dc1dc)](https://www.codacy.com/app/mojo706/bucketlist?utm_source=github.com&utm_medium=referral&utm_content=mojo706/bucketlist&utm_campaign=Badge_Coverage)
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
 # Buckets : A Bucketlist API
