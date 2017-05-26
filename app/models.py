@@ -20,10 +20,6 @@ class User(db.Model):
     bucket = db.relationship(
         'Bucketlist', cascade="all, delete-orphan")
 
-    # def __init__(self, email, password):
-    #     self.email = email
-    #     self.password = Bcrypt().generate_password_hash(password).decode()
-
     def __init__(self, email, password):
         self.email = email
         self.password = Bcrypt().generate_password_hash(
@@ -36,29 +32,6 @@ class User(db.Model):
         """
         return Bcrypt().check_password_hash(self.password, password)
 
-    # def encode_auth_token(self, user_id):
-    #     """
-    #     Generates the Auth Token
-    #     :return: string
-    #     """
-    #     try:
-    #         # payload = {
-    #         #     'exp': datetime.datetime.now() + datetime.timedelta(days=0, minutes=20),
-    #         #     'iat': datetime.datetime.now(),
-    #         #     'sub': user_id
-    #         # }
-    #         # jwt_token = jwt.encode(
-    #         #     payload,
-    #         #     current_app.config.get('SECRET'),
-    #         #     'utf-8',
-    #         #     algorithm='HS256',
-    #         # )
-
-    #         return jwt_token.decode('utf-8')
-
-    #     except Exception as e:
-    #         # return an error in string format if an exception occurs
-    #         return e
     def encode_auth_token(self, issuer, sub):
         """
         Generates the Auth Token
