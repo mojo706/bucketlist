@@ -19,14 +19,14 @@ class BucketlistTestCase(unittest.TestCase):
         self.app = create_app(config_name="testing")
         self.client = self.app.test_client
         self.bucketlist = {'name': 'Hike Mount Everest'}
-        user_data = {
-            'email': 'testuser@test.com',
-            'password': 'testpassword1'
-        }
-        self.client().post('/bucketlist/api/v1.0/auth/register', data=user_data)
-        res = self.client().post('/bucketlist/api/v1.0/auth/login', data=user_data)
-        auth_token = json.loads(res.data.decode('utf-8'))['auth_token']
-        self.headers = dict(Authorization="Bearer " + auth_token)
+        # user_data = {
+        #     'email': 'testuser@test.com',
+        #     'password': 'testpassword1'
+        # }
+        # self.client().post('/bucketlist/api/v1.0/auth/register', data=user_data)
+        # res = self.client().post('/bucketlist/api/v1.0/auth/login', data=user_data)
+        # auth_token = json.loads(res.data.decode('utf-8'))['auth_token']
+        # self.headers = dict(Authorization="Bearer " + auth_token)
 
         # binds the app to the current context
         self.app_context = self.app.app_context()
@@ -125,7 +125,7 @@ class BucketlistTestCase(unittest.TestCase):
         auth_token = json.loads(response.data.decode('utf-8'))['auth_token']
         this_header = dict(Authorization="Bearer " + auth_token)
         res = self.client().post('/bucketlist/api/v1.0/bucketlists/',
-                                 headers=self.headers, data={'name': 'Go bungee jumping'})
+                                 headers=this_header, data={'name': 'Go bungee jumping'})
         self.assertEqual(res.status_code, 201)
         res = self.client().delete('/bucketlist/api/v1.0/bucketlists/1', headers=this_header)
         self.assertEqual(res.status_code, 200)
@@ -226,7 +226,7 @@ class BucketlistTestCase(unittest.TestCase):
         self.assertTrue(
             data['message'] == 'User already exists. Please Log in.')
         self.assertTrue(response.content_type == 'application/json')
-        self.assertEqual(response.status_code, 202)
+        self.assertEqual(response.status_code, 409)
 
     def test_registered_user_login(self):
         """ Test for login of registered-user login """
