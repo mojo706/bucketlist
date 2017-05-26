@@ -5,3 +5,4 @@
 .env
 .coverage
 .coveragerc
+coverage.xml
