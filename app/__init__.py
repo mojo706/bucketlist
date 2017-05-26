@@ -361,8 +361,9 @@ def create_app(config_name):
                             'date_created': exist_item.date_created,
                             'date_modified': exist_item.date_modified
                         }
+                        response = jsonify(response)
                         response.status_code = 200
-                        return make_response(jsonify(response))
+                        return make_response(response)
                     else:
                         response = {
                             "message": "Item name not valid"
