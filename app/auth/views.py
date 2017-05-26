@@ -30,6 +30,14 @@ class RegisterAPI(MethodView):
         is_valid_email = re.match(
             '^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$', email)
 
+        if email == "":
+            response = jsonify({
+                "message": "Please enter an email"
+            })
+            response.status_code = 400
+            return make_response(response)
+
+
         if not is_valid_email:
             response = jsonify({
                 "message": "Invalid Email Format!"
