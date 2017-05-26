@@ -1,4 +1,6 @@
 
+import re
+
 from flask import request, json, jsonify, make_response
 from flask.views import MethodView
 from flask_bcrypt import Bcrypt
@@ -19,16 +21,28 @@ class RegisterAPI(MethodView):
         # get the post data
 
         post_data = request.data
+        email = post_data["email"]
+        password = post_data["password"]
 
         # check if user already exists
-        user = User.query.filter_by(email=post_data['email']).first()
+        user = User.query.filter_by(email="email").first()
+
+        is_valid_email = re.match(
+            '^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$', email)
+
+        if not is_valid_email:
+            response = jsonify({
+                "message": "Invalid Email Format!"
+            })
+            response.status_code = 400
+            return make_response(response)
 
         if not user:
             # Try register a new user first
             try:
                 user = User(
-                    email=post_data['email'],
-                    password=post_data['password']
+                    email=email,
+                    password=password
                 )
 
                 # save the user
@@ -53,7 +67,7 @@ class RegisterAPI(MethodView):
                 'status': 'fail',
                 'message': 'User already exists. Please Log in.',
             }
-            return make_response(jsonify(response)), 202
+            return make_response(jsonify(response)), 409
 
 
 class LoginAPI(MethodView):
@@ -108,4 +122,3 @@ auth_blueprint.add_url_rule(
     view_func=login_view,
     methods=['POST']
 )
-
