@@ -1,4 +1,3 @@
-
 import os
 
 from flask_api import FlaskAPI
@@ -121,8 +120,10 @@ def create_app(config_name):
                         response.status_code = 200
                         return make_response(response)
                     else:
-                        search_bucket = Bucketlist.query.filter_by(
-                            name=search).first()
+                        search_bucket = Bucketlist.query.filter(
+                            Bucketlist.name.ilike(search)).all()
+                        
+
                         if not search_bucket:
                             response = jsonify({
                                 "message": "That Bucketlist Does Not Exist!"
@@ -130,8 +131,9 @@ def create_app(config_name):
                             response.status_code = 404
                             return make_response(response)
                         else:
+                            b_id = [bid.id for bid in search_bucket]
                             search_item = Item.query.filter_by(
-                                bucketlist_id=search_bucket.id)
+                                bucketlist_id=b_id[0])
                             item_list = []
                             for item in search_item:
                                 obj = {
@@ -141,13 +143,15 @@ def create_app(config_name):
                                     'date_modified': item.date_modified
                                 }
                                 item_list.append(obj)
+                            bucketlist = search_bucket[0]
+                            
                             obj = {
-                                'id': search_bucket.id,
-                                'name': search_bucket.name,
-                                'date_created': search_bucket.date_created,
-                                'date_modified': search_bucket.date_modified,
+                                'id': bucketlist.id,
+                                'name': bucketlist.name,
+                                'date_created': bucketlist.date_created,
+                                'date_modified': bucketlist.date_modified,
                                 'items': item_list,
-                                'created_by': search_bucket.created_by
+                                'created_by': bucketlist.created_by
                             }
                             response = jsonify(obj)
                             response.status_code = 200
@@ -270,7 +274,8 @@ def create_app(config_name):
                 if not bucketlist:
                     abort(404)
 
-                exist_item = Item.query.filter_by(bucketlist_id=id).filter_by(name=name).first()
+                exist_item = Item.query.filter_by(
+                    bucketlist_id=id).filter_by(name=name).first()
 
                 if exist_item:
                     response = {
@@ -361,9 +366,8 @@ def create_app(config_name):
                             'date_created': exist_item.date_created,
                             'date_modified': exist_item.date_modified
                         }
-                        response = jsonify(response)
                         response.status_code = 200
-                        return make_response(response)
+                        return make_response(jsonify(response))
                     else:
                         response = {
                             "message": "Item name not valid"
